@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sleep Calculator - คำนวณเวลาตื่นนอน</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Prompt', sans-serif; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center justify-center p-4 selection:bg-indigo-500 selection:text-white">
+
+  <div class="w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl shadow-2xl p-6 sm:p-8">
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 mb-3">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight text-white">Sleep Calculator</h1>
+      <p class="text-slate-400 text-sm mt-1">คำนวณรอบการนอนเพื่อให้ตื่นมาอย่างสดชื่น ไม่เพลีย</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 bg-slate-950/60 p-1.5 rounded-2xl border border-slate-800/80 mb-6">
+      <button id="tab-bed" onclick="switchTab('bed')" class="py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium">เข้านอน</button>
+      <button id="tab-wake" onclick="switchTab('wake')" class="py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium">ตื่นนอน</button>
+    </div>
+
+    <div class="mb-4">
+      <label id="input-label" for="time-input" class="block text-sm text-slate-300 mb-2">เลือกเวลาที่คุณจะเข้านอน</label>
+      <input id="time-input" type="time" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-lg text-white focus:outline-none focus:border-indigo-500">
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 mb-5">
+      <button onclick="setNowTime()" class="py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-sm font-medium">ตอนนี้</button>
+      <button onclick="calculateSleep()" class="py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold">คำนวณ</button>
+    </div>
+
+    <div id="result-section" class="hidden">
+      <div class="flex items-center justify-between mb-3">
+        <h2 id="result-title" class="text-sm font-semibold text-slate-300"></h2>
+        <span class="text-xs text-slate-500">*รวมเวลาเคลิ้มหลับ 14 นาที</span>
+      </div>
+      <div id="result-list" class="space-y-2.5"></div>
+    </div>
+
+    <div class="mt-6 pt-4 border-t border-slate-800/50 text-center">
+      <p class="text-xs text-slate-500">💡 มนุษย์เราต้องการการนอนหลับประมาณ 5-6 รอบ (7.5 - 9 ชั่วโมง) ต่อคืนเพื่อความสดชื่นสูงสุด</p>
+    </div>
+  </div>
+
+  <script>
+    let currentMode = 'bed';
+
+    const bedTab = document.getElementById('tab-bed');
+    const wakeTab = document.getElementById('tab-wake');
+    const inputLabel = document.getElementById('input-label');
+
+    window.onload = function () {
+      setNowTime();
+    };
+
+    function switchTab(mode) {
+      currentMode = mode;
+
+      if (mode === 'bed') {
+        bedTab.className = "py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium bg-indigo-600 text-white shadow-lg shadow-indigo-600/30";
+        wakeTab.className = "py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium text-slate-400 hover:text-white";
+        inputLabel.innerText = "เลือกเวลาที่คุณจะเข้านอน";
+      } else {
+        wakeTab.className = "py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium bg-indigo-600 text-white shadow-lg shadow-indigo-600/30";
+        bedTab.className = "py-2.5 px-3 rounded-xl text-xs sm:text-sm font-medium text-slate-400 hover:text-white";
+        inputLabel.innerText = "เลือกเวลาที่คุณต้องการจะตื่น";
+      }
+
+      document.getElementById('result-section').classList.add('hidden');
+    }
+
+    function setNowTime() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('time-input').value = `${hours}:${minutes}`;
+      switchTab('bed');
+      calculateSleep();
+    }
+
+    function calculateSleep() {
+      const timeVal = document.getElementById('time-input').value;
+      if (!timeVal) {
+        alert('กรุณาเลือกเวลาก่อนครับ');
+        return;
+      }
+
+      const [h, m] = timeVal.split(':').map(Number);
+      const baseDate = new Date();
+      baseDate.setHours(h, m, 0, 0);
+
+      const resultList = document.getElementById('result-list');
+      resultList.innerHTML = '';
+      document.getElementById('result-section').classList.remove('hidden');
+
+      const resultTitle = document.getElementById('result-title');
+      const cycles = [
+        { count: 6, label: "นอน 9 ชั่วโมง (6 รอบ)" },
+        { count: 5, label: "นอน 7 ชั่วโมง 30 นาที (5 รอบ - แนะนำ ✨)" },
+        { count: 4, label: "นอน 6 ชั่วโมง (4 รอบ)" },
+        { count: 3, label: "นอน 4 ชั่วโมง 30 นาที (3 รอบ)" }
+      ];
+
+      if (currentMode === 'bed') {
+        resultTitle.innerText = "เวลาที่คุณควรเข้านอน:";
+
+        cycles.forEach(cycle => {
+          const targetTime = new Date(baseDate.getTime() - ((cycle.count * 90) + 14) * 60000);
+          renderResultItem(formatTime(targetTime), cycle.label, cycle.count >= 5);
+        });
+      } else {
+        resultTitle.innerText = "เวลาที่คุณควรตื่น:";
+
+        cycles.forEach(cycle => {
+          const targetTime = new Date(baseDate.getTime() + ((cycle.count * 90) + 14) * 60000);
+          renderResultItem(formatTime(targetTime), cycle.label, cycle.count >= 5);
+        });
+      }
+    }
+
+    function formatTime(date) {
+      return date.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false
+      });
+    }
+
+    function renderResultItem(timeStr, label, isBest) {
+      const resultList = document.getElementById('result-list');
+      const item = document.createElement('div');
+
+      if (isBest) {
+        item.className = "flex items-center justify-between p-3.5 bg-emerald-950/40 border border-emerald-500/30 rounded-xl";
+        item.innerHTML = `
+          <div>
+            <span class="text-xl font-bold text-emerald-400">${timeStr} น.</span>
+            <p class="text-xs text-emerald-300/80 mt-0.5">${label}</p>
+          </div>
+          <span class="text-xs bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full font-medium">แนะนำ</span>
+        `;
+      } else {
+        item.className = "flex items-center justify-between p-3 bg-slate-950/40 border border-slate-800 rounded-xl hover:border-slate-700 transition-all";
+        item.innerHTML = `
+          <div>
+            <span class="text-lg font-bold text-white">${timeStr} น.</span>
+            <p class="text-xs text-slate-400 mt-0.5">${label}</p>
+          </div>
+        `;
+      }
+
+      resultList.appendChild(item);
+    }
+  </script>
+</body>
+</html>
